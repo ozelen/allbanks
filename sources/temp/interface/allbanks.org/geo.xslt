@@ -61,7 +61,7 @@
 							<strong><xsl:value-of select="address"/></strong>
 						</xsl:when>
 						<xsl:otherwise>
-							<a href="/{//city/uri}/offices/{uname}/{@id}/">
+							<a href="{//city/uri}/offices/{uname}/{@id}/">
 								<xsl:value-of select="address"/>
 							</a>
 						</xsl:otherwise>
@@ -86,8 +86,8 @@
 					<strong><xsl:value-of select="name"/></strong>
 				</xsl:when>
 				<xsl:otherwise>
-					<a href="/{//city/uri}/offices/{uname}/">
-						<xsl:value-of select="name"/>
+					<a href="{//city/uri}/offices/{uname}/">
+						<xsl:value-of select="name" />
 					</a>
 				</xsl:otherwise>
 			</xsl:choose>
@@ -162,7 +162,7 @@
 							(<xsl:value-of select="count_banks"/>)
 						</xsl:when>
 						<xsl:otherwise>
-							<a href="/{uri}/">
+							<a href="{uri}">
 								<xsl:value-of select="name"/>
 							</a>
 							(<xsl:value-of select="count_banks"/>)
@@ -200,11 +200,11 @@
 											<xsl:if test="uri=$adm2/uri">
 												<ul>
 													<xsl:for-each select="/out/geonames/settlements/settlement[@id=$city/@id]">
-														<li class="sel"><a href="{$company/uri}/{uri}/"><xsl:value-of select="name" /></a> (<xsl:value-of select="count_banks" />)</li>
+														<li class="sel"><a href="{$company/uri}{uri}/"><xsl:value-of select="name" /></a> (<xsl:value-of select="count_banks" />)</li>
 													</xsl:for-each>
 
 													<xsl:for-each select="/out/geonames/settlements/settlement[not(@id=$city/@id)]">
-														<li><a href="{$company/uri}/{uri}/"><xsl:value-of select="name" /></a> (<xsl:value-of select="count_banks" />)</li>
+														<li><a href="{$company/uri}{uri}/"><xsl:value-of select="name" /></a> (<xsl:value-of select="count_banks" />)</li>
 													</xsl:for-each>
 												</ul>
 											</xsl:if>
@@ -222,7 +222,7 @@
 								</ul>
 							</li>
 						</xsl:if>
-						<xsl:for-each select="/out/geonames/regions[@level=1 and @country=$country/countryCode]/region[not(uri=$adm1/uri)]">
+						<xsl:for-each select="/out/geonames/regions[@level=1 and @country=$country/uri]/region[not(uri=$adm1/uri)]">
 							<li>
 								<a href="{$company/uri}/{$countryid}/{uri}/">
 									<xsl:value-of select="name"/>
@@ -256,7 +256,7 @@
 		<div style="text-align:center; overflow:hidden">
 			<div class="title">
 				<!--<a href="/bank/{$current/@id}">-->
-				<a href="/companies/{$current/uname}/{//city/uri}/">
+				<a href="/companies/{$current/uname}{//city/uri}/">
 					<xsl:value-of select="$current/name"/>
 				</a>
 			</div>
@@ -270,7 +270,6 @@
 	</xsl:template>
 
 	<xsl:template name="geoBanks">
-
 
 
 		<xsl:choose>

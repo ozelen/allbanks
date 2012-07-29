@@ -13,9 +13,22 @@ class Geo extends MNG
 	var $currentPlace;
 	var $company_id;
 	var $adminSequence;
+	var $currentAdminDistrict;
+	var $geoUri;
 	function Geo()
 	{
 		$this->inc();
+	}
+
+	public function getGeoUri($arr, $node=0){
+		foreach($arr as $type => $code){
+			$q = "select * from Taxonomy where node = $node and code = '$code' ";
+			$arr[$type] = mysql_fetch_array($this->DB->q($q), MYSQL_ASSOC);
+			$node = $arr[$type]['id'];
+			if(!$node)break;
+		}
+		$this->currentAdminDistrict = $arr[$type];
+		return $arr;
 	}
 
 	public function GeoNames($vars){
@@ -23,13 +36,22 @@ class Geo extends MNG
 
 		$companies = new Companies();
 
-		$this->ctryid       = $this->DB->getFieldWhere("GeoCountries", "ISO", "where ISO3='" . $vars['country'] . "'");
+		$this->ctryid       = $vars['country']; // $this->DB->getFieldWhere("GeoCountries", "ISO", "where ISO3='" . $vars['country'] . "'");
 		$this->vars         = $vars;
 		$this->adm1id       = $vars['adm1'];
 		$this->adm2id       = $vars['adm2'];
 		$this->adm3id       = $vars['adm3'];
 		$this->officename   = $vars['officename'];
 		$this->adminSequence = array();
+
+		$this->geoUri = $this->getGeoUri(
+			array(
+				'country' 	=> $vars['country'],
+				'adm1'		=> $vars['adm1'],
+				'adm2'		=> $vars['adm2'],
+				'adm3'		=> $vars['adm3']
+			)
+		);
 
 		if($this->company = $vars['companyname']){
 			$company_id = $this->CFG->DB->getFieldWhere("orgcom", "id_org", " where uname = '$this->company' ");
@@ -42,7 +64,6 @@ class Geo extends MNG
 		$countries = $this->listCountries();
 		// * Caching
 		// * return cache file content if it exists
-
 		$fn = array();
 		foreach($vars as $key => $val){$fn[]=$key.'_'.$val;}
 		$CacheDir = 'geo/'.join('/', $vars);
@@ -50,24 +71,14 @@ class Geo extends MNG
 		$CachePath = $CacheDir.'/'.$CacheFileName;
 		//if($CachedContent = $this->getCache($CacheDir, $CacheFileName))return $CachedContent;
 		// / Caching
-
-		// foreach ($vars as $key => $val) {print "[$key = $val] <br>";}
-
-
-
-
 		$admin1 = $this->listRegions($this->ctryid, 1);
 		$admin2 = $this->listRegions($this->ctryid, 2, $this->adm1id);
 		$admin3 = $this->listRegions($this->ctryid, 3, $this->adm2id);
-
-		//dbg("<adm1>$admin1</adm1><adm2>$admin2</adm2><adm3>$admin2</adm3>");
-		//dbg($this->adminSequence);
-		$cities = $this->listSettlements(array('country_code' => $this->ctryid, 'admin1_code' => $this->adm1id, 'admin2_code' => $this->adm2id));
+		$adm2 = $this->DB->getField("GeoAdminCodes", "admin2_code", $this->geoUri['adm2']['objid']);
+		$cities = $this->listSettlements(array('country_code' => $this->ctryid, 'admin1_code' => $this->adm1id, 'admin2_code' => $adm2));
 		$city_cond = array('country_code' => $this->ctryid, '1' => $this->adm1id, '2' => $this->adm2id, '3' => $this->adm3id, '4' => $this->adm4id, 'company'=>$this->company);
 		$city = $this->tryCity($city_cond);
-
 		if($this->cityId)$offices = $this->officeList('city_id = ' . $this->cityId, 'biz_name');
-
 		$xml = '
 			<geonames>
 				' . $countries  . '
@@ -80,13 +91,8 @@ class Geo extends MNG
 				' . $company . '
 			</geonames>
 		';
-
 		// Write cache
 		$this->newCache($CacheDir, $CacheFileName, $xml);
-
-	//	dbg($path);
-	//	dbg($xml);
-	//	dbg($admin1);
 		return $xml;
 	}
 
@@ -95,23 +101,20 @@ class Geo extends MNG
 		//foreach()
 	}
 
-    public function logo($id){
-        $dir = $this->CFG->guiImgDir."logo/";
-        $temp = $dir."l".$id.".*";
-        $path = glob("$temp*");
-        $logo = pathinfo($path[0]);
-        return $logo['basename'];
-    }
+	public function logo($id){
+		$dir = $this->CFG->guiImgDir."logo/";
+		$temp = $dir."l".$id.".*";
+		$path = glob("$temp*");
+		$logo = pathinfo($path[0]);
+		return $logo['basename'];
+	}
 
 	public function company($id){
-		if(!$id)return;
+		if(!$id)return null;
 		$dir = $this->CFG->guiImgDir."logo/";
 		$temp = $dir."l".$id.".*";
 		$c = mysql_fetch_object($this->DB->q("select * from `orgcom` where id_org = ".$id));
-
-
 		$logo = file_exists($dir."l".$id.".gif") ? 'logo="true"' : null;
-
 		/*
 		foreach(glob("$temp*") as $fpath){
 			if(is_file($fpath)){
@@ -120,7 +123,6 @@ class Geo extends MNG
 		}
 		*/
 		//$logos = pathinfo(glob("$temp*"));
-
 		$path = glob("$temp*");
 		$logo = pathinfo($path[0]);
 		$logo_attr = $logo['basename'] ? 'logo="'.$logo['basename'].'"' : null;
@@ -237,36 +239,14 @@ class Geo extends MNG
 		return $xml;
 	}
 
-	public function tryCity($cond)
-	{
-		if (!is_array($cond)) return;
-		foreach ($cond as $k => $v) {
-			$cond[$k] = addslashes($v);
-		}
-		$country = $cond['country_code'];
-		$adm = array();
-		//dbg($cond);
-		for ($i = 1; $i <= 4; $i++) {
-			if ($cond[$i]) $adm[$i] = $cond[$i];
-			else {
-				$city_pos = $i - 1;
-				$city = $cond[$city_pos];
-				//print "[".$adm[$city_pos]."]<br>";
-				unset($adm[$city_pos]);
-				break;
-			}
-		}
-
-		foreach ($adm as $key => $value) {
-			$admcode = $this->adminSequence[$value]['code'];
-			$adm_cond_txt .= " and `admin" . $key . "_code` = '$admcode'";
-		}
-
-		$q = "select * from GeoNames where country_code = '$country' $adm_cond_txt and uname = '$city' ";
+	public function tryCity($cond) {
+		if($this->currentAdminDistrict['type']!='GeoNames')return null;
+		$q = "select * from GeoNames where id = ".$this->currentAdminDistrict['objid'];
 		$c = mysql_fetch_object($this->DB->q($q));
 		//dbg($q);
 		$this->cityId = $c->geonameid;
-		$uri = $uri = $this->getUri(array($this->vars['country'], $c->admin1_code, $c->admin2_code, $c->admin3_code, $c->admin4_code, $c->uname));
+	//	$uri = $uri = $this->getUri(array($this->vars['country'], $c->admin1_code, $c->admin2_code, $c->admin3_code, $c->admin4_code, $c->uname));
+		$uri = $this->getTaxUri($c->id, 'GeoNames');
 		$xml = '
 			<city id="' . $c->id . '" geoid="' . $c->geonameid . '" >
 				<uri>'.$uri.'</uri>
@@ -298,7 +278,7 @@ class Geo extends MNG
 		while ($c = mysql_fetch_object($geo)) {
 			$xml .= '
 				<country id="' . $c->id . '" geoid="' . $c->geonameid . '">
-					<uri>' . strtolower($c->ISO3) . '</uri>
+					<uri>' . strtolower($c->ISO) . '</uri>
 					<countryCode>' . $c->ISO . '</countryCode>
 					<countryName>' . $c->Country . '</countryName>
 					<isoNumeric>' . $c->ISONumeric . '</isoNumeric>
@@ -312,7 +292,7 @@ class Geo extends MNG
 					<languages><![CDATA[' . $c->Languages . ']]></languages>
 					<geonameId>' . $c->geonameid . '</geonameId>
 					<count_banks>' . $c->count_banks . '</count_banks>
-				</country> 
+				</country>
 					';
 		}
 		//dbg($xml);
@@ -320,11 +300,8 @@ class Geo extends MNG
 		return $xml;
 	}
 
-	public function listRegions($ctry_code, $level, $node = NULL)
-	{
+	public function listRegions($ctry_code, $level, $node = NULL) {
 		if($level>1 && !$node) return; // try to optimize
-
-
 		if ($node) {
 			//    $node_cond=" and admin1_code = '".addslashes($node)."'";
 			//    $join_cond="and b.admin2 = r.admin2_code";
@@ -335,7 +312,7 @@ class Geo extends MNG
 
 			for ($l = 1; $l < $level; $l++) {
 				$uname = addslashes($this->vars['adm'.$l]);
-				$adm = mysql_fetch_object($this->DB->q("select name, uname, admin".$l."_code as code from GeoAdminCodes where uname = '$uname' and `type` = 'adm$l' and country_code = '$ctry_code' $node_cond "));
+				$adm = mysql_fetch_object($this->DB->q("select name, uname, admin".$l."_code as code from GeoAdminCodes where admin".$l."_code = '$uname' and `type` = 'adm$l' and country_code = '$ctry_code' $node_cond "));
 				$this->adminSequence[$adm->uname] = array('name'=>$adm->name, 'code'=>$adm->code);
 				$node_cond .= " and admin" . $l . "_code = '" . $adm->code . "'";
 
@@ -358,13 +335,14 @@ class Geo extends MNG
 		}
 
 		$q = "
-			select r.*, count(b.id) as count_banks
+			select tn.code, r.*, count(b.id) as count_banks
 			from GeoAdminCodes r
 			join dump_banks b
 				on b.admin1 = r.admin1_code
 				$join_cond
 			join orgcom com on com.id_org = b.company_id and com.PageId is not null
-			where `type` = 'adm$level' and country_code = '$ctry_code' $node_cond
+			join Taxonomy tn on tn.objid = r.id and tn.type = 'GeoAdminCodes'
+			where r.`type` = 'adm$level' and country_code = '$ctry_code' $node_cond
 			group by r.id
 		";
 
@@ -384,7 +362,7 @@ class Geo extends MNG
 			$admcode = $c['admin' . $level . '_code'];
 			$ident = is_numeric($admcode) ? (int)$admcode : strtolower($admcode);
 
-			$ident = $c['uname'];
+			$ident = $c['code'];
 
 			$xml .= '
 				<region id="' . $c['id'] . '" geoid="' . $c['geonamesid'] . '">
@@ -412,7 +390,6 @@ class Geo extends MNG
 			if($adm = $this->adminSequence[$value]['code'])
 			$cond_arr[$key] = $adm;
 		}
-	//	dbg($cond_arr);
 
 		$cond = array();
 		foreach ($cond_arr as $key => $value) {
@@ -426,24 +403,25 @@ class Geo extends MNG
 
 		if (!$cond_str) return NULL;
 		$q = "
-			select 
-				s.id, 
-				s.geonameid, 
-				s.country_code,
-				s.admin1_code,
-				s.admin2_code,
+			select
+				s.id,
+				s.geonameid,
+				lower(s.country_code) as country,
+				lower(s.admin1_code) as adm1,
+				lower(s.admin2_code) as adm2,
 				s.admin3_code,
 				s.admin4_code,
 				s.name,
-				asciiname, 
+				asciiname,
+				iso,
 				iso3,
 				s.uname,
 				count(b.id) as count_banks
-			from GeoNames s 
+			from GeoNames s
 			join GeoCountries c on s.country_code = c.ISO
 			join dump_banks b on s.geonameid = b.city_id
 				$cond_company
-		    join orgcom com on com.id_org = b.company_id and com.PageId is not null
+			join orgcom com on com.id_org = b.company_id and com.PageId is not null
 			where $cond_str
 			group by s.id
 			order by count_banks desc
@@ -455,8 +433,11 @@ class Geo extends MNG
 		if(!$geo)return "<error />";
 		while ($c = mysql_fetch_object($geo)) {
 			//$iso3 = $this->CFG->DB->getFieldWhere("GeoCountries", "ISO3", " where ISO = ''");
-			$guri = array($c->iso3, $c->admin1_code, $c->admin2_code, $c->admin3_code, $c->admin4_code, $c->uname);
-			$uri = $this->getUri($guri);
+			//$adm2 = is_numeric($c->adm2) ? $this->getTaxCode();
+			$guri = array($c->country, $c->adm1, $adm2, $c->admin3_code, $c->admin4_code, $c->uname);
+			$uri = $this->getTaxUri($c->id, 'GeoNames');
+			//$uri = $this->getUri($guri);
+
 			//$uri = "$iso3, $c->admin1_code, $c->admin2_code, $c->admin3_code, $c->admin4_code, $c->asciiname";
 			$xml .= '
 				<settlement id="' . $c->id . '" geoid="' . $c->geonameid . '">
@@ -470,8 +451,17 @@ class Geo extends MNG
 		}
 		//dbg($this->company_id."\n\n".$xml);
 		$xml = "<settlements>$xml</settlements>";
-		dbg($guri);
+		//dbg($uri);
 		return $xml;
+	}
+
+	function getTaxUri($id, $type=null){
+		if(!$id)return;
+		$q = $type ? "objid = $id and type = '$type'" : $q = "id = $id";
+		$t = mysql_fetch_object($this->DB->q("select * from Taxonomy where ".$q));
+		$uri = $this->getTaxUri($t->node);
+		//print "[$t->code]";
+		return $t->code ? $uri."/".$t->code : $uri;
 	}
 
 	function getUri($path_arr){
