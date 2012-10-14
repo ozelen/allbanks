@@ -91,7 +91,9 @@ class Modules extends MNG{
 				'descr'  => 'Incorrect login/password'
 			);
 		}
-		return json_encode($resp);
+		print_r($resp);
+		return $_SESSION['uid'];
+		//return json_encode($resp);
 	}
 
 	function logout(){

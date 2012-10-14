@@ -6,10 +6,12 @@
 	</xsl:template>
 
 	<xsl:template match="page" mode="display">
+		<xsl:if test="/out/user/level=1">
 		<ul class="icons ui-widget ui-helper-clearfix controls ui-state-default ui-corner-all" style="right:0; top:0">
 			<li class="ui-state-default ui-corner-all" onclick="winHref('currentPageWin', '/adm/sitemap/{@id}/editdata/');" title="Edit document"><span class="ui-icon ui-icon-pencil"></span></li>
 			<li class="ui-state-default ui-corner-all" onclick="winHref('currentPageWin', '/adm/sitemap/{@id}/');" title="Show folder tree"><span class="ui-icon ui-icon-folder-open"></span></li>
 		</ul>
+		</xsl:if>
 		<div id="currentPageWin"></div>
 		<h1><xsl:value-of select="title" /></h1>
 		<div class="MainTextArea">
@@ -77,6 +79,20 @@
 					.tblock{float:left; width: 250px; padding: 0 10px}
 				</style>
 			</head>
+			<div id="footer">
+				<div id="botMenu" style="background:#023; padding-bottom:5px; padding-left: 5px">
+					<div class="ui-corner-bottom element" id="loginButton" onmouseover="$('#loginDiv').show()" onmouseout="$('#loginDiv').hide()">
+						<div id="loginDiv" class="ui-widget ui-corner-bottom ui-widget-content login-widget body">
+							<xsl:if test="/out/user"><xsl:call-template name="userMenu" /></xsl:if>
+							<xsl:if test="not(/out/user)"><xsl:call-template name="login" /></xsl:if>
+						</div>
+						<div class="header">
+							<xsl:if test="/out/user"><xsl:value-of select="/out/user/name" /></xsl:if>
+							<xsl:if test="not(/out/user)">Login</xsl:if>
+						</div>
+					</div>
+				</div>
+			</div>
 			<body style="margin:0; padding:0">
 
 				<div id="header" style="height:100px"></div>
@@ -105,26 +121,7 @@
 								<xsl:value-of select="$extra" />
 							</td>
 						</tr>
-                        <tr>
-                            <td colspan="3">
-	                            <!--
-                                <div id="footer">
-                                    <div id="botMenu" style="background:#023; padding-bottom:5px; padding-left: 5px">
-                                        <div class="ui-corner-bottom element" id="loginButton" onmouseover="$('#loginDiv').show()" onmouseout="$('#loginDiv').hide()">
-                                            <div id="loginDiv" class="ui-widget ui-corner-top ui-widget-content login-widget body">
-                                                <xsl:if test="/out/user"><xsl:call-template name="userMenu" /></xsl:if>
-                                                <xsl:if test="not(/out/user)"><xsl:call-template name="login" /></xsl:if>
-                                            </div>
-                                            <div class="header">
-                                                <xsl:if test="/out/user"><xsl:value-of select="/out/user/name" /></xsl:if>
-                                                <xsl:if test="not(/out/user)">Login</xsl:if>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-	                            -->
-                            </td>
-                        </tr>
+
 					</table>
 				</div>
 

@@ -30,6 +30,7 @@
 
 	<xsl:template name="additem">
 		<xsl:param name="channelid" select="@id"/>
+		<xsl:if test="/out/user/level=1">
 		<div class="ajax ui-corner-all ui-state-default" style="padding:2px">
 			<div class="ui-widget-header ui-corner-all" style="padding:5px; cursor:pointer" onclick="$(this).parent().find('.additemform').toggle(); $('.newsitem .form').hide(); $('.newsitem .view').show();">
 				<span class="ui-icon ui-icon-plus" style="float:left"></span>
@@ -48,6 +49,7 @@
 				</form>
 			</div>
 		</div>
+		</xsl:if>
 	</xsl:template>
 
 

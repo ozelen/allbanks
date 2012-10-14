@@ -11,6 +11,7 @@
         -->
         <!--<xsl:variable name="pageid" select="$cur/@id" />-->
         <xsl:variable name="pageid" select="/out/presets/uri-vars/pageid" />
+		<xsl:if test="/out/user/level=1">
 		<form action="/adm/sitemap/{$pageid}/postdata/" class="ajax winform">
 			<xsl:choose>
                 <xsl:when test="$cur">
@@ -34,6 +35,7 @@
 
 		<button ico="ui-icon-disk" style="padding:2px"><span>Save</span></button>
 		</form>
+		</xsl:if>
 	</xsl:template>
 
 

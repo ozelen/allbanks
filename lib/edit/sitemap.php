@@ -19,6 +19,11 @@ class SiteMap extends Modules{
 	function Exec($name, $params, $templ=NULL){
 		//print "[$name]";
 		//print "exec [$name] <br />";
+		//exit(0);
+		if($this->CFG->UserData->Level!=1){
+			print "Administration only";
+			exit;
+		}
 		switch($name){
 			case "menu" 	: return $this->menu($params); break;
 			case "pagelist"	: return $this->pageList($this->uriVars['pageid']); break;

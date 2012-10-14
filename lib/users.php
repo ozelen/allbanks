@@ -129,6 +129,7 @@ class Users extends Modules{
 				$_SESSION['uname']=$this->UserData->Name;
 				$_SESSION['pass']=$this->UserData->Pass;
 				$_SESSION['email']=$this->UserData->Email;
+				print $_SESSION['uid'];
 	//			header("Location: http://$direct/");
 				$this->CFG->SysMsg->Add('Welcome, '.$this->UserData->Name.'!', "ok");
 			}else{

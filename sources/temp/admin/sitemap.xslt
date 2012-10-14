@@ -41,6 +41,7 @@
     </xsl:template>
     <xsl:template name="pageEditControls">
         <xsl:param name="id" select="@id" />
+		<xsl:if test="/out/user/level=1">
         <ul class="icons ui-widget ui-helper-clearfix controls ui-state-default ui-corner-all" style="position:absolute; display:none; margin-top:1.5em">
             <li class="ui-state-default ui-corner-all" onclick="winHref('pagewin_{$id}', '/adm/sitemap/{$id}/addform/'); $(this).closest('.controls').hide()" title="Add child node" style="margin-right:10px"><span class="ui-icon ui-icon-plus"></span></li>
             <li class="ui-state-default ui-corner-all" onclick="winHref('pagewin_{$id}', '/adm/sitemap/{$id}/editdata/'); $(this).closest('.controls').hide()" title="Edit document"><span class="ui-icon ui-icon-pencil"></span></li>
@@ -48,5 +49,6 @@
             <li class="ui-state-default ui-corner-all" onclick="if(confirm('Delete document {field[@id='Ser']} {field[@id='Number']}?')) $.post('/ua/adm/sitemap/{$id}/delete/', function(data){{$('#page_{$id}').remove()}})" title="Delete document"><span class="ui-icon ui-icon-trash"></span></li>
             <li style="margin:2 5px; width:25px" class="ui-corner-all" onclick="$(this).closest('.controls').fadeOut()" title="Hide this toolbar"><div style="margin:auto" class="ui-icon ui-icon-close"></div></li>
         </ul>
+		</xsl:if>
     </xsl:template>
 </xsl:stylesheet>

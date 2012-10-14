@@ -109,7 +109,7 @@ table.tableCompanyList td{
 
 .login-widget{
     width:300px;
-    border-bottom:none;
+    border-top:none;
 }
 
 .login-widget input{
@@ -145,8 +145,7 @@ table.tableCompanyList td{
 }
 
 #botMenu .element .body{
-    position:absolute;
-    bottom: -100px;
+	position: absolute;
     display:none
 }
 
